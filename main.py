@@ -1,9 +1,12 @@
 import logging
+import telegram
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 from dependencies import TOKEN
 import planking
 
-
+'''
+Enable simple loggings for debugging and error cases to two different files.
+'''
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO
@@ -18,21 +21,38 @@ file_settings = logging.FileHandler('logs/errors.log')
 error_logger.addHandler(file_settings)
 error_logger.warning('Test file logging')
 
-def messages(update, context):
-    plank = planking.Plank()
-    plank.message_handler(update, context)
+plank = planking.Plank()
 
 
-def help(update, context):
-    print(update.message.from_user)
-    update.message.reply_text("This is the help")
+
+
+def handle_messages(update, context):
+    '''
+    Handle message request coming to the bot.
+    - Currently supporting only planking excercise tracking and /help command.
+    '''
+    if update.message.text == '/help':
+        help(update)
+    else:
+        plank.message_handler(update, context)
+
+
+def help(update):
+    '''
+    Return information of the commands that bot has
+    '''
+    update.message.reply_text("Available commands are:\n\lankutus\n-Add planking result in seconds. Format is /lankutus 'integer'")
+
+
 
 def main():
-    updater = Updater(token=TOKEN, use_context=True)
-    updater.dispatcher.add_handler(MessageHandler(Filters.all, messages))
-    updater.start_polling()
-    updater.idle()
-
+    try:
+        updater = Updater(token=TOKEN, use_context=True)
+        updater.dispatcher.add_handler(MessageHandler(Filters.all, handle_messages))
+        updater.start_polling()
+        updater.idle()
+    except Exception as e:
+        error_logger.error(e)
 
 if __name__ == '__main__':
     main()
