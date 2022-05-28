@@ -5,6 +5,7 @@ from contextlib import contextmanager
 class DB_helper:
     def __init__(self, db_name='excercises.db') -> None:
         self.dbname = db_name
+        
 
     @contextmanager
     def cursor(self):
@@ -31,14 +32,21 @@ class DB_helper:
 
     def delete_planking_result(self, user):
         with self.cursor() as cur:
-            stmt = "DELETE FROM planking WHERE user = (?) and id = (SELECT MAX(id) FROM planking);"
+            stmt = "DELETE FROM planking WHERE user = (?) and rowid = (SELECT MAX(rowid) FROM planking);"
             args = (user, )
             cur.execute(stmt, args)
         
 
     def get_plank_results(self):
         with self.cursor() as cur:
-            stmt = "SELECT result FROM planking"
-            results = [x[0] for x in cur.execute(stmt)]
+            stmt = "SELECT user, created, result FROM planking"
+            cur.execute(stmt)
+            rows = cur.fetchall()
+            data = {}
+            for row in rows:
+                user, created, result = row
+                if user not in data:
+                    data[user] = []
+                data[user].append((created, result))
 
-        return results 
+        return data 
