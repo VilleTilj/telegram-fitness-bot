@@ -2,8 +2,12 @@
 Class for adding planking records to databases
 '''
 
+from unittest import result
+
+from matplotlib import pyplot as plt
 from db_helper import DB_helper
 import datetime
+from dependencies import test_users, IS_TEST
 
 
 class Plank():
@@ -24,6 +28,23 @@ class Plank():
     def add_result(self, update, context):
         print(update.message.from_user)
         update.message.reply_text("Test plank class Commands")
+
+    def show_todays_results(self, update, context, results):
+        for key, value in results.items():
+            item = str(datetime.datetime.today().date())
+            output = list(filter(lambda x:item in x, value))
+            update.message.reply_text(f'{test_users[key]} : {output}')
+
+    
+    def plot_all_results(self, update, context, results):
+        for key, value in results.items():
+            if key in test_users.keys():
+                data = list(map(list, zip(*value)))
+                plt.plot(data[0], data[1])
+            print(data)
+
+        plt.savefig('results.png')
+        context.bot.sendPhoto(chat_id=update.message.chat_id, photo=open('results.png','rb'), caption='All entered planking results')
 
 
     def message_handler(self, update, context):
@@ -50,3 +71,20 @@ class Plank():
             self.db.add_planking_results(update.message.chat_id, datetime.datetime.today().date(), msg.split()[1])
             update.message.reply_text('Planking result saved!')
         
+        elif('/get_all_results' in msg):
+            chat_id = update.message.chat_id
+            results = self.db.get_plank_results()
+            filtered_results = {}
+            if IS_TEST:
+                for key, value in results.items():
+                    if str(key) in test_users:
+                        filtered_results[key] = value
+                
+                self.plot_all_results(update, context, filtered_results)
+            
+            elif chat_id in results:
+                data = results[chat_id]
+                self.plot_all_results(update, context, data)
+
+            else:
+                update.message.reply_text('Your have not uploaded any results yet!')
