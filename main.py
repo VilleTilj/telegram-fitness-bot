@@ -41,7 +41,7 @@ def help(update):
     '''
     Return information of the commands that bot has
     '''
-    update.message.reply_text("Available commands are:\n\lankutus\n-Add planking result in seconds. Format is /lankutus 'integer'")
+    update.message.reply_text("Available commands are:\n/lankutus\n-Add planking result in seconds. Format is /lankutus 'integer'")
 
 
 
