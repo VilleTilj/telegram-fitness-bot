@@ -2,11 +2,6 @@
 Class for adding planking records to databases
 '''
 
-from calendar import week
-from turtle import color
-from unittest import result
-from cv2 import MARKER_CROSS
-
 from matplotlib import pyplot as plt
 from db_helper import DB_helper
 import datetime

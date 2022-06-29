@@ -1,5 +1,4 @@
 import logging
-import telegram
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 from dependencies import TOKEN
 import planking
