@@ -3,6 +3,7 @@ Class for adding planking records to databases
 '''
 
 from matplotlib import pyplot as plt
+import matplotlib.dates as mdates
 import matplotlib
 matplotlib.use('agg')
 from db_helper import DB_helper
@@ -19,11 +20,8 @@ class Plank():
         self.db.setup()
         self.waiting_result = False
 
-    def add_result(self, update):
-        print(update.message.from_user)
-        update.message.reply_text("Test plank class Commands")
-
     def show_best_results(self, update, context, results):
+        '''Return users best planking results as a text message'''
         for key, value in results.items():
             if int(key) == update.message.chat_id:
                 data = list(map(list, zip(*value)))
@@ -33,6 +31,7 @@ class Plank():
 
     
     def plot_week_results(self, update, context, results):
+        '''Return photo visualizing planking results from last 7 days'''
         for key, value in results.items():
             if int(key) == update.message.chat_id:
                 data = list(map(list, zip(*value)))
@@ -44,7 +43,15 @@ class Plank():
                         idx.append(i)
 
                 data[0], data[1] = [data[0][i] for i in idx], [data[1][i] for i in idx]
-                plt.plot(data[0], data[1], marker='o', linestyle='--',)
+                data = self.__get_highest_results(data)
+                x = [datetime.datetime.strptime(d,'%Y-%m-%d').date() for d in data[0]]
+                plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
+                plt.gca().xaxis.set_major_locator(mdates.DayLocator())
+                plt.plot(x, data[1], marker='o', linestyle='--',)
+                plt.gcf().autofmt_xdate()
+                plt.title('Last 7 days planking results, best of each day.')
+                plt.xlabel('Date')
+                plt.ylabel('Seconds')
 
         plt.savefig('results.png')
         context.bot.sendPhoto(chat_id=update.message.chat_id, photo=open('results.png','rb'), caption='Your last 7 days entered planking results!')
@@ -56,14 +63,38 @@ class Plank():
         for key, value in results.items():
             if int(key) == update.message.chat_id:
                 data = list(map(list, zip(*value)))
-                plt.plot(data[0], data[1], marker='o', linestyle='--',)
-                plt.legend()
+                data = self.__get_highest_results(data)
+                x = [datetime.datetime.strptime(d,'%Y-%m-%d').date() for d in data[0]]
+                fig, ax = plt.subplots()
+                plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
+                plt.gca().xaxis.set_major_locator(mdates.DayLocator())
+                plt.plot(x, data[1], marker='o', linestyle='--',)
+                plt.gcf().autofmt_xdate()
+                plt.title('All entered planking results, best of each day.')
+                plt.xlabel('Date')
+                plt.ylabel('Seconds')
+
+                every_nth = 4
+                for n, label in enumerate(ax.xaxis.get_ticklabels()):
+                    if n % every_nth != 0:
+                        label.set_visible(False)
 
         plt.savefig('results.png')
         context.bot.sendPhoto(chat_id=update.message.chat_id, photo=open('results.png','rb'), caption='All entered planking results')
 
+    def __get_highest_results(self, data) -> list:
+        temp: list[tuple] = [()]
+        for i, day in enumerate(data[0]):
+            if day not in temp[-1]: 
+                temp.append( (day, data[1][i]))
+ 
+            elif data[1][i] > temp[1][-1]:
+                temp[-1] = (day, data[1][i])
+        data = list(map(list, zip(*temp[1:])))
+        return data
 
     def message_handler(self, update, context):
+        '''Handle upcoming request messages and select know commands'''
         msg = update.message.text
 
         if ('/planking' in msg) and (len(msg.split()) == 1):
